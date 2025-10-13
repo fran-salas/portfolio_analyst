@@ -1,4 +1,6 @@
 import pandas as pd
+import scipy.stats
+import numpy as np
 
 def drawdown(return_series: pd.Series): #inputs. :pd.Series expresses the type
   """
@@ -43,6 +45,27 @@ def get_hfi_returns():
   hfi.index = hfi.index.to_period('M')
   return hfi
 
+
+def semideviation(r):
+  """
+  Returns the semideviation aka negative semideviation of r
+  r must be a Series or a Dataframe
+  """
+  is_negative = r < 0 #boolean mask
+  return r[is_negative].std(ddof=0)
+
+
+def var_historic(r, level = 5):
+  """
+  VaR historic
+  """
+  if isinstance(r, pd.DataFrame):
+    return r.aggregate(var_historic, level = level)
+  elif isinstance(r, pd.Series):
+    return -np.percentile(r,level) #it is semi deviation, so all are understood to be negative. We present them as positive
+  else:
+    raise TypeError("Expected r to be Series or DataFrame")
+
 def skewness(r):
   """
   Alternative to scipy.stats.skew()
@@ -66,3 +89,16 @@ def kurtosis(r):
   sigma_r = r.std(ddof=0)
   exp = (demeaned_r**4).mean()
   return exp / sigma_r**4
+
+
+
+def is_normal(r, level=0.01):
+  """
+  Applies the Jarque Bera test to dermine if a series is normal or not
+  Test is applied at the 1% level by default
+  Returns true if the hypothesis of normality is accepted, false otherwise
+  """
+
+  statistic, p_value = scipy.stats.jarque_bera(r)
+
+  return p_value>level
