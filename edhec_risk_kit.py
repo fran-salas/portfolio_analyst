@@ -1,5 +1,6 @@
 import pandas as pd
 import scipy.stats
+from scipy.stats import norm
 import numpy as np
 
 def drawdown(return_series: pd.Series): #inputs. :pd.Series expresses the type
@@ -54,6 +55,18 @@ def semideviation(r):
   is_negative = r < 0 #boolean mask
   return r[is_negative].std(ddof=0)
 
+def semideviation3(r):
+    """
+    Returns the semideviation aka negative semideviation of r
+    r must be a Series or a DataFrame, else raises a TypeError
+    """
+    excess= r-r.mean()                                        # We demean the returns
+    excess_negative = excess[excess<0]                        # We take only the returns below the mean
+    excess_negative_square = excess_negative**2               # We square the demeaned returns below the mean
+    n_negative = (excess<0).sum()                             # number of returns under the mean
+    return (excess_negative_square.sum()/n_negative)**0.5     # semideviation
+
+
 
 def var_historic(r, level = 5):
   """
@@ -65,6 +78,37 @@ def var_historic(r, level = 5):
     return -np.percentile(r,level) #it is semi deviation, so all are understood to be negative. We present them as positive
   else:
     raise TypeError("Expected r to be Series or DataFrame")
+  
+
+def var_gaussian(r, level=5, modified=False):
+  """
+  Returns the parametric gaussian VaR of a series or dataframe
+  """
+  z = norm.ppf(level/100)
+  if modified:
+    #modify the Z score based on observed skewness and kurtosis
+    s = skewness(r)
+    k = kurtosis(r)
+    z = (z +
+         (z**2 -1)*s/6+
+         (z**3 -3*z)*(k-3)/24 -
+         (2*z**3 -5*z)*(s**2)/36
+        )
+
+  return abs(r.mean() +z*r.std(ddof=0))
+
+def cvar_historic(r, level=5):
+    """
+    Computes the Conditional VaR of Series or DataFrame
+    """
+    if isinstance(r, pd.Series):
+        is_beyond = r <= -var_historic(r, level=level) #is_beyond is the boolean mask
+        return -r[is_beyond].mean()
+    elif isinstance(r, pd.DataFrame):
+        return r.aggregate(cvar_historic, level=level)
+    else:
+        raise TypeError("Expected r to be a Series or DataFrame")
+
 
 def skewness(r):
   """
