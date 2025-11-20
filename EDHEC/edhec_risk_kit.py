@@ -36,6 +36,18 @@ def get_hfi_returns():
     hfi.index = hfi.index.to_period('M')
     return hfi
 
+
+def annualize_rets(r, periods_per_year):
+    """
+    Annualizes a set of returns
+    We should infer the periods per year
+    but that is currently left as an exercise
+    to the reader :-)
+    """
+    compounded_growth = (1+r).prod()
+    n_periods = r.shape[0]
+    return compounded_growth**(periods_per_year/n_periods)-1
+
 # ========================
 # DRAWDOWN & RISK MEASURES
 # ========================
@@ -144,3 +156,42 @@ def is_normal(r, level=0.01):
     """
     statistic, p_value = scipy.stats.jarque_bera(r)
     return p_value > level
+
+
+# ========================
+# OPTIMAL PORTFOLIO and EFFICIENT FRONTIER
+# ========================
+
+def portfolio_return(weights, returns):
+    """
+    Computes the return on a portfolio from constituent returns and weights
+    weights are a numpy array or Nx1 matrix and returns are a numpy array or Nx1 matrix
+    """
+    return weights.T @ returns
+
+
+def portfolio_vol(weights, covmat):
+    """
+    Computes the vol of a portfolio from a covariance matrix and constituent weights
+    weights are a numpy array or N x 1 maxtrix and covmat is an N x N matrix
+    """
+    return (weights.T @ covmat @ weights)**0.5
+
+
+def plot_ef2(n_points, er, cov):
+    """
+    Plots the 2-asset efficient frontier
+    """
+
+    if er.shape[0] != 2 or er.shape[0] != 2:
+        raise ValueError("Plot_ef2 can only plot 2-asset frontiers")
+    
+    weights = [np.array([w,1-w]) for w in np.linspace(0,1,n_points)]
+    rets = [portfolio_return(w, er) for w in weights]
+    vols = [portfolio_vol(w, cov) for w in weights]
+    ef = pd.DataFrame({
+        "Returns":rets,
+        "Volatility":vols
+    })
+
+    return ef.plot.line(x="Volatility", y="Returns", style = ".-")
