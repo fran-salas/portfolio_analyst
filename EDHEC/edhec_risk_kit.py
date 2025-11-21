@@ -195,3 +195,21 @@ def plot_ef2(n_points, er, cov, style = ".-"):
     })
 
     return ef.plot.line(x="Volatility", y="Returns", style=style)
+
+def plot_ef(n_points, er, cov, style = ".-"):
+    """
+    Plots the N-asset efficient frontier
+    """
+
+    if er.shape[0] != 2 or er.shape[0] != 2:
+        raise ValueError("Plot_ef can only plot N-asset frontiers")
+
+    weights = 
+    rets = [portfolio_return(w, er) for w in weights]
+    vols = [portfolio_vol(w, cov) for w in weights]
+    ef = pd.DataFrame({
+        "Returns":rets,
+        "Volatility":vols
+    })
+
+    return ef.plot.line(x="Volatility", y="Returns", style=style)   
