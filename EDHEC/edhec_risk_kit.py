@@ -178,7 +178,7 @@ def portfolio_vol(weights, covmat):
     return (weights.T @ covmat @ weights)**0.5
 
 
-def plot_ef2(n_points, er, cov):
+def plot_ef2(n_points, er, cov, style = ".-"):
     """
     Plots the 2-asset efficient frontier
     """
@@ -194,4 +194,4 @@ def plot_ef2(n_points, er, cov):
         "Volatility":vols
     })
 
-    return ef.plot.line(x="Volatility", y="Returns", style = ".-")
+    return ef.plot.line(x="Volatility", y="Returns", style=style)
